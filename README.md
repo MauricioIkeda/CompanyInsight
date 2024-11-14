@@ -23,12 +23,14 @@ Este projeto é uma ferramenta de web scraping e análise de reclamações do si
 - **Selenium e WebDriver**: Realiza o scraping automatizado no site do Reclame Aqui.
 - **SpaCy**: Treinamento e implementação de modelos de NLP para análise de texto.
 - **FuzzyWuzzy**: Suporte para correspondência de texto ao identificar e categorizar informações das reclamações.
+- **Tkinter**: Usado para fazer a interface do aplicativo.
+- **MatPlotLib**: Usado para fazer os graficos para o nosso aplicativo.
 
 ## Instalação
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/seu-usuario/nome-do-repositorio.git
+   git clone https://github.com/MauricioIkeda/CompanyInsight.git
    ```
 2. Instale as dependências listadas no `requirements.txt`:
    ```bash
@@ -48,10 +50,8 @@ Este projeto é uma ferramenta de web scraping e análise de reclamações do si
 
 - `BackEnd.ipynb`: Arquivo principal para execução do scraper e processamento de NLP.
 - `requirements.txt`: Arquivo de dependências para instalação do ambiente.
-- `Treinar-IA/`: Contém os scripts para scraping de dados no Reclame Aqui para treinamento do modelo de IA (WebScrapingColetaTreinamento.py) e contém scripts e modelos para análise de texto (TreinamentoDoModelo.ipynb).
-## Contribuição
-
-Contribuições são bem-vindas! Por favor, envie um pull request com as alterações e melhorias.
+- `Treinar-IA/`: Contém os scripts para scraping de dados no Reclame Aqui para treinamento do modelo de IA (WebScrapingColetaTreinamento.py) e contém scripts para treinar o modelo da IA para análise de texto (TreinamentoDoModelo.ipynb).
+- `Interface/`: Contém a prototipação feita no Photoshop da interface e a propria interface feita em python utilizando Tkinter e MatPlotLib.
 
 ## Licença
 
