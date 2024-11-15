@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import ttk
 
 import mysql.connector
 
@@ -97,7 +98,7 @@ class Aplicativo:
         self.ranking_produtos = self.contador_produtos.most_common()
 
         ranking_text = ""
-        for index, (produto, quantidade) in enumerate(self.ranking_produtos, start=1):
+        for index, (produto, quantidade) in enumerate(self.ranking_produtos[:5], start=1):
             ranking_text += f"{index}. {produto}\n"
 
         produtos = [produto for produto, quantidade in self.ranking_produtos]
@@ -129,11 +130,29 @@ class Aplicativo:
         self.barrinhaBonita = Frame(self.FrameEmpresa, background="black", width=1280, height=3)
         self.barrinhaBonita.place(relx=0.5, rely=0.11, anchor="center")
 
+        self.barrinhaBonita2 = Frame(self.FrameEmpresa, background="black", width=3, height=640)
+        self.barrinhaBonita2.place(relx=0.5, rely=1, anchor="s")
+
         self.LabelzinhoRank = Label(self.FrameEmpresa, text="Rank Dos Mais Reclamados", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
         self.LabelzinhoRank.place(relx=0.05, rely=0.2, anchor="w")
 
         self.Rank = Label(self.FrameEmpresa, text=ranking_text, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
         self.Rank.place(relx=0.05, rely=0.37, anchor="w")
+
+        self.tree = ttk.Treeview(self.FrameEmpresa, columns=("Reclamações"), show='headings')
+        self.tree.column("Reclamações", width=500)
+        self.tree.heading("Reclamações", text="Reclamações".capitalize())
+        self.tree.place(relx=0.75, rely=0.4, anchor="center")
+
+        self.cursor.execute(f"SELECT motivo_reclamado FROM {empresa}")
+        resultados = self.cursor.fetchall()
+
+        for linha in resultados:
+            if linha[0] != "None":
+                self.tree.insert("", "end", values=(linha[0],))
+
+        estilo = ttk.Style()
+        estilo.configure("Treeview", rowheight=25)
 
 
     def criarTelaScrapping(self, empresa):
