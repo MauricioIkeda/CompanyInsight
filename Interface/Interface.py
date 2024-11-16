@@ -79,14 +79,17 @@ class Aplicativo:
         self.HabibsBotao.place(relx=0.6, rely=0.65, anchor="center")
 
     def criarTelaEmpresa(self, empresa):
+        # Frames da Tela de Empresa
         self.FrameEmpresa = Frame(self.CanvasPrincipal, background="white")
         self.FrameEmpresa.pack(fill='both', expand=True)
         self.Frames.append(self.FrameEmpresa)
 
+        # Pegando os dados de rankeamento para ser exibido no grafico
         self.cursor.execute(f"SELECT * FROM {empresa}_rank")
         resultadosRank = self.cursor.fetchall()
 
         self.listinhaRank = []
+        self.listinhaProduto = []
 
         for resultado in resultadosRank:
             produto = resultado[1]
@@ -101,10 +104,12 @@ class Aplicativo:
         ranking_text = ""
         for index, (produto, quantidade) in enumerate(self.ranking_produtos[:5], start=1):
             ranking_text += f"{index}. {produto}\n"
+            self.listinhaProduto.append(produto)
 
         produtos = [produto for produto, quantidade in self.ranking_produtos[:5]]
         quantidades = [quantidade for produto, quantidade in self.ranking_produtos[:5]]
 
+        # Montando o grafico de pizza
         fig, ax = plt.subplots(figsize=(4, 4))
         ax.pie(quantidades, labels=produtos, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 8})
 
@@ -119,6 +124,7 @@ class Aplicativo:
 
         canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=500, height=500)
 
+        # Montando a tela
         self.NomeEmpresa = Label(self.FrameEmpresa, text=empresa.upper(), font="Impact 50", background=self.FrameEmpresa.cget("bg"))
         self.NomeEmpresa.place(relx=0.99, rely=0.0, anchor="ne")
 
@@ -140,20 +146,38 @@ class Aplicativo:
         self.Rank = Label(self.FrameEmpresa, text=ranking_text, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
         self.Rank.place(relx=0.05, rely=0.37, anchor="w")
 
+        self.SeletorReclamacoes = ttk.Combobox(self.FrameEmpresa, values=self.listinhaProduto)
+        self.SeletorReclamacoes.set(self.listinhaProduto[0])
+        self.SeletorReclamacoes.bind("<<ComboboxSelected>>", lambda event: self.mudarTabela(self.SeletorReclamacoes.get()))
+        self.SeletorReclamacoes.place(relx=0.75, rely=0.17, anchor="center")
+
+        # Criando e colocando os dados da tabela de reclamações
         self.tree = ttk.Treeview(self.FrameEmpresa, columns=("Reclamações"), show='headings')
         self.tree.column("Reclamações", width=500)
         self.tree.heading("Reclamações", text="Reclamações".capitalize())
         self.tree.place(relx=0.75, rely=0.4, anchor="center")
 
         self.cursor.execute(f"SELECT motivo_reclamado FROM {empresa}")
-        resultadosMotivoReclamacao = self.cursor.fetchall()
-
-        for linha in resultadosMotivoReclamacao:
-            if linha[0] != "None":
-                self.tree.insert("", "end", values=(linha[0],))
+        self.resultadosMotivoReclamacao = self.cursor.fetchall()
+        self.cursor.execute(f"SELECT produto_reclamado FROM {empresa}")
+        self.resultadosProdutoReclamado = self.cursor.fetchall()
 
         estilo = ttk.Style()
         estilo.configure("Treeview", rowheight=25)
+
+        self.mudarTabela(self.SeletorReclamacoes.get())
+    
+    def mudarTabela(self, produto):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        motivos_inseridos = set()
+
+        for motivo, produto_reclamado in zip(self.resultadosMotivoReclamacao, self.resultadosProdutoReclamado):
+            if produto_reclamado[0] == produto:
+                if motivo[0] != "None" and motivo[0] not in motivos_inseridos:
+                    motivos_inseridos.add(motivo[0])
+                    self.tree.insert("", "end", values=(motivo[0],))
 
 
     def criarTelaScrapping(self, empresa):
