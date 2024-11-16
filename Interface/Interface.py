@@ -24,6 +24,8 @@ import traceback
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+import sys
+
 class Aplicativo:
     def __init__(self):
         # Configuração da janela
@@ -31,6 +33,7 @@ class Aplicativo:
         self.janela.geometry("1280x720")
         self.janela.resizable(False, False)
         self.janela.title("CompanyInsight")
+        self.janela.protocol("WM_DELETE_WINDOW", self.fechar_tudo)
 
         # Banco De Dados
         self.conexao = mysql.connector.connect(
@@ -43,7 +46,6 @@ class Aplicativo:
         self.cursor = self.conexao.cursor()
 
         # Variaveis para o scraping
-
         self.produtos_conhecidos = []
 
         # Criação do Canvas e Frames do Aplicativo
@@ -82,12 +84,11 @@ class Aplicativo:
         self.Frames.append(self.FrameEmpresa)
 
         self.cursor.execute(f"SELECT * FROM {empresa}_rank")
-
-        self.results = self.cursor.fetchall()
+        resultadosRank = self.cursor.fetchall()
 
         self.listinhaRank = []
 
-        for resultado in self.results:
+        for resultado in resultadosRank:
             produto = resultado[1]
             quantidade = int(resultado[2])
 
@@ -101,11 +102,11 @@ class Aplicativo:
         for index, (produto, quantidade) in enumerate(self.ranking_produtos[:5], start=1):
             ranking_text += f"{index}. {produto}\n"
 
-        produtos = [produto for produto, quantidade in self.ranking_produtos]
-        quantidades = [quantidade for produto, quantidade in self.ranking_produtos]
+        produtos = [produto for produto, quantidade in self.ranking_produtos[:5]]
+        quantidades = [quantidade for produto, quantidade in self.ranking_produtos[:5]]
 
-        fig, ax = plt.subplots(figsize=(3, 3))
-        ax.pie(quantidades, labels=produtos, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 7})
+        fig, ax = plt.subplots(figsize=(4, 4))
+        ax.pie(quantidades, labels=produtos, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 8})
 
         ax.axis('equal')
 
@@ -116,7 +117,7 @@ class Aplicativo:
 
         canvas_widget = canvas.get_tk_widget()
 
-        canvas_widget.place(relx=0.163, rely=0.64, anchor="center")
+        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=500, height=500)
 
         self.NomeEmpresa = Label(self.FrameEmpresa, text=empresa.upper(), font="Impact 50", background=self.FrameEmpresa.cget("bg"))
         self.NomeEmpresa.place(relx=0.99, rely=0.0, anchor="ne")
@@ -145,9 +146,9 @@ class Aplicativo:
         self.tree.place(relx=0.75, rely=0.4, anchor="center")
 
         self.cursor.execute(f"SELECT motivo_reclamado FROM {empresa}")
-        resultados = self.cursor.fetchall()
+        resultadosMotivoReclamacao = self.cursor.fetchall()
 
-        for linha in resultados:
+        for linha in resultadosMotivoReclamacao:
             if linha[0] != "None":
                 self.tree.insert("", "end", values=(linha[0],))
 
@@ -190,6 +191,12 @@ class Aplicativo:
         return lematizado
     
     def fazerScrapping(self, empresa):
+        self.cursor.execute(f"SELECT produto_rank FROM {empresa}_rank")
+        resultadosProdutosConhecidos = self.cursor.fetchall()
+
+        for resultado in resultadosProdutosConhecidos:
+            self.produtos_conhecidos.append(resultado)
+
         self.service = Service(ChromeDriverManager().install())  
 
         options = webdriver.ChromeOptions()
@@ -213,6 +220,9 @@ class Aplicativo:
             try:
                 WebDriverWait(self.driver, 20).until(lambda d: len(d.find_elements(By.CLASS_NAME, 'sc-1pe7b5t-1')) > 0)
                 reclamacoes = self.driver.find_elements(By.CLASS_NAME, 'sc-1pe7b5t-1')
+
+                self.driver.execute_script("arguments[0].click();", reclamacoes[0])
+                self.driver.get(url)
                 
                 for index in range(len(reclamacoes)):
                     try:
@@ -220,11 +230,11 @@ class Aplicativo:
                         reclamacao = reclamacoes[index]
                         
                         self.driver.execute_script("arguments[0].click();", reclamacao)
-                        
+
                         WebDriverWait(self.driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'sc-lzlu7c-3')))
                         
                         titulo = self.driver.find_element(By.CLASS_NAME, 'sc-lzlu7c-3').text
-                        reclamacao_texto = self.driver.find_element(By.CLASS_NAME, 'sc-lzlu7c-17').text.replace('\n', ' ')
+                        reclamacao_texto = self.driver.find_element(By.CLASS_NAME, 'sc-lzlu7c-17').text.replace('\n', ' ').replace('"', ' ').replace("'", ' ')
                         local_reclamacao = self.driver.find_elements(By.CLASS_NAME, 'sc-lzlu7c-6')[0].text
                         data_reclamacao = self.driver.find_elements(By.CLASS_NAME, 'sc-lzlu7c-6')[1].text
                         status_reclamacao = self.driver.find_element(By.CLASS_NAME, 'sc-lzlu7c-18').text
@@ -270,14 +280,27 @@ class Aplicativo:
 
         for produto, frequencia in self.ranking_produtos1:
             print(f"{produto}: {frequencia} reclamações")
-            comando = f'INSERT INTO positivo_rank (produto_rank, quantidade_rank) VALUES ("{produto}", "{frequencia}")'
+            comando = f'''
+                INSERT INTO positivo_rank (produto_rank, quantidade_rank) 
+                VALUES ("{produto}", "{frequencia}") 
+                ON DUPLICATE KEY UPDATE 
+                quantidade_rank = quantidade_rank + {frequencia};
+            '''
             self.cursor.execute(comando)
             self.conexao.commit()
 
         self.driver.quit()
+        self.destruirFrames()
+        self.criarTelaEmpresa(empresa)
 
     def destruirFrames(self):
         for frame in self.Frames:
             frame.destroy()
+
+    def fechar_tudo(self):
+        if hasattr(self, 'driver'):
+            self.driver.quit()
+        self.janela.destroy()
+        sys.exit()
 
 Aplicativo()
