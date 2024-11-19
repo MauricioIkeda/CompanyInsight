@@ -1,0 +1,8 @@
+mysql-connector-python
+undetected-chromedriver
+selenium
+webdriver-manager
+spacy
+fuzzywuzzy
+python-dotenv
+matplotlib
