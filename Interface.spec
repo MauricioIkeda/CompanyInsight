@@ -8,7 +8,7 @@ a = Analysis(
     ],
     datas=[
         ('T:\\Faculdade\\Projeto Ageis\\CompanyInsight\\Interface\\Botoes\\*.png', 'Botoes'),  # Inclui todos os arquivos PNG da pasta Botoes
-        ('T:\\Faculdade\\Projeto Ageis\\CompanyInsight\\Interface\\model-last', 'model-last'),  # Inclui o modelo treinado
+        ('T:\\Faculdade\\Projeto Ageis\\CompanyInsight\\Treinar IA\\NovaIA', 'NovaIA'),  # Inclui o modelo treinado
     ],  
     hiddenimports=[],
     hookspath=[],

@@ -148,7 +148,7 @@ class Aplicativo:
 
         canvas_widget = canvas.get_tk_widget()
 
-        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=500, height=500)
+        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=300, height=300)
 
         # Montando a tela
         self.NomeEmpresa = Label(self.FrameEmpresa, text=empresa.upper(), font="Impact 50", background=self.FrameEmpresa.cget("bg"))
@@ -259,7 +259,7 @@ class Aplicativo:
 
         self.driver = uc.Chrome(options=options)
 
-        model_path = os.path.join(self.base_path, 'Treinar IA', 'model-last')
+        model_path = os.path.join(self.base_path, 'Treinar IA', 'NovaIA')
 
         self.IA = spacy.load(model_path)
 
