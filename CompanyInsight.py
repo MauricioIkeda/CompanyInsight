@@ -111,26 +111,31 @@ class Aplicativo:
         self.Frames.append(self.FrameEmpresa)
 
         # Pegando os dados de rankeamento para ser exibido no grafico
-        self.cursor.execute(f"SELECT * FROM {empresa}_rank")
-        resultadosRank = self.cursor.fetchall()
+        self.cursor.execute(f"SELECT * FROM {empresa}")
+        self.resultadosBancoDeDado = self.cursor.fetchall()
 
-        self.listinhaRank = []
+        self.listinhaRankProduto = []
         self.listinhaProduto = []
+        produtos_processados = set()
 
-        for resultado in resultadosRank:
-            produto = resultado[1]
-            quantidade = int(resultado[2])
+        for resultado in self.resultadosBancoDeDado:
+            produto = resultado[6]
+            regiao = resultado[3]
 
-            for _ in range(quantidade):
-                self.listinhaRank.append(produto)
-        
-        self.contador_produtos = Counter(self.listinhaRank)
-        self.ranking_produtos = self.contador_produtos.most_common()
+            if produto not in produtos_processados:
+                produtos_processados.add(produto)
+                self.listinhaProduto.append(produto)
+
+                for resultado2 in self.resultadosBancoDeDado:
+                    produto2 = resultado2[6]
+                    if produto2 == produto:
+                        self.listinhaRankProduto.append(produto)
+                        
+        self.ranking_produtos = Counter(self.listinhaRankProduto).most_common()
 
         ranking_text = ""
-        for index, (produto, quantidade) in enumerate(self.ranking_produtos[:5], start=1):
+        for index, (produto, quantidade) in enumerate(self.ranking_produtos[0:5], start=1):
             ranking_text += f"{index}. {produto}\n"
-            self.listinhaProduto.append(produto)
 
         produtos = [produto for produto, quantidade in self.ranking_produtos[:5]]
         quantidades = [quantidade for produto, quantidade in self.ranking_produtos[:5]]
@@ -141,14 +146,14 @@ class Aplicativo:
 
         ax.axis('equal')
 
-        plt.tight_layout()
+        #plt.tight_layout()
 
         canvas = FigureCanvasTkAgg(fig, master=self.FrameEmpresa)
         canvas.draw()
 
         canvas_widget = canvas.get_tk_widget()
 
-        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=300, height=300)
+        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=400, height=265)
 
         # Montando a tela
         self.NomeEmpresa = Label(self.FrameEmpresa, text=empresa.upper(), font="Impact 50", background=self.FrameEmpresa.cget("bg"))
@@ -170,16 +175,16 @@ class Aplicativo:
         self.barrinhaBonita2.place(relx=0.5, rely=1, anchor="s")
 
         # Ranqueamento de produtos
-        self.LabelzinhoRank = Label(self.FrameEmpresa, text="Rank Dos Mais Reclamados", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
-        self.LabelzinhoRank.place(relx=0.05, rely=0.2, anchor="w")
+        self.LabelzinhoRankProduto = Label(self.FrameEmpresa, text="Rank Dos Mais Reclamados", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
+        self.LabelzinhoRankProduto.place(relx=0.05, rely=0.2, anchor="w")
 
         self.Rank = Label(self.FrameEmpresa, text=ranking_text, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
-        self.Rank.place(relx=0.05, rely=0.37, anchor="w")
+        self.Rank.place(relx=0.05, rely=0.23, anchor="nw")
 
         # Barra de seleção do produto para exibir na tabela
         self.SeletorReclamacoes = ttk.Combobox(self.FrameEmpresa, values=self.listinhaProduto)
         self.SeletorReclamacoes.set(self.listinhaProduto[0])
-        self.SeletorReclamacoes.bind("<<ComboboxSelected>>", lambda event: self.mudarTabela(self.SeletorReclamacoes.get()))
+        self.SeletorReclamacoes.bind("<<ComboboxSelected>>", lambda event: (self.mudarTabela(self.SeletorReclamacoes.get()), self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get())))
         self.SeletorReclamacoes.place(relx=0.75, rely=0.17, anchor="center")
 
         # Criando e colocando os dados da tabela de reclamações
@@ -197,19 +202,65 @@ class Aplicativo:
         estilo.configure("Treeview", rowheight=25)
 
         self.mudarTabela(self.SeletorReclamacoes.get())
+
+        # Ranqueamento de localidade reclamada
+        self.LabelzinhoRankRegiao = Label(self.FrameEmpresa, text="Rank Das Regiões Mais Reclamadas", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
+        self.LabelzinhoRankRegiao.place(relx=0.55, rely=0.65, anchor="w")
+
+        self.RankRegiao = Label(self.FrameEmpresa, text="", font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
+        self.RankRegiao.place(relx=0.55, rely=0.68, anchor="nw")
+
+        self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get())
     
+    def formatar_texto(self, texto, largura_maxima):
+        palavras = texto.split()
+        linhas = []
+        linha_atual = ""
+
+        for palavra in palavras:
+            if len(linha_atual) + len(palavra) + 1 <= largura_maxima:
+                linha_atual += " " + palavra if linha_atual else palavra
+            else:
+                linhas.append(linha_atual)
+                linha_atual = palavra
+
+        if linha_atual:
+            linhas.append(linha_atual)
+
+        return "\n".join(linhas)
+
+
     def mudarTabela(self, produto):
+        largura_maxima = 90
         for item in self.tree.get_children():
             self.tree.delete(item)
-        
+
         motivos_inseridos = set()
 
         for motivo, produto_reclamado in zip(self.resultadosMotivoReclamacao, self.resultadosProdutoReclamado):
             if produto_reclamado[0] == produto:
                 if motivo[0] != "None" and motivo[0] not in motivos_inseridos:
                     motivos_inseridos.add(motivo[0])
-                    self.tree.insert("", "end", values=(motivo[0],))
+                    texto_formatado = self.formatar_texto(motivo[0], largura_maxima)
+                    linhas = texto_formatado.split("\n")
 
+                    for linha in linhas:
+                        self.tree.insert("", "end", values=(linha,))
+                    self.tree.insert("", "end", values=(" ",))
+
+    def mudarRanqueamentoRegiao(self, produto):
+        self.listinhaRankRegiao = []
+
+        for resultado in self.resultadosBancoDeDado:
+            if produto == resultado[6]:
+                self.listinhaRankRegiao.append(resultado[3])
+        
+        self.rankingRegiao_text = ""
+        for index, (produto, quantidade) in enumerate(Counter(self.listinhaRankRegiao).most_common()[0:5], start=1):
+            self.rankingRegiao_text += f"{index}. {produto}\n"
+            self.listinhaProduto.append(produto)
+        
+        self.RankRegiao.config(text=self.rankingRegiao_text)
 
     def criarTelaScrapping(self, empresa):
         self.FrameScrapping = Frame(self.CanvasPrincipal, background="white")
@@ -235,7 +286,7 @@ class Aplicativo:
         if lematizado.endswith('s'):
             lematizado = lematizado.rstrip('s')
         
-        resultado = process.extractOne(lematizado, self.produtos_conhecidos, score_cutoff=80)
+        resultado = process.extractOne(lematizado, self.produtos_conhecidos, score_cutoff=75)
         
         if resultado:
             produto_correspondente, similaridade = resultado
@@ -246,11 +297,12 @@ class Aplicativo:
         return lematizado
     
     def fazerScrapping(self, empresa):
-        self.cursor.execute(f"SELECT produto_rank FROM {empresa}_rank")
+        self.cursor.execute(f"SELECT produto_reclamado FROM {empresa}")
         resultadosProdutosConhecidos = self.cursor.fetchall()
 
         for resultado in resultadosProdutosConhecidos:
-            self.produtos_conhecidos.append(resultado)
+
+            self.produtos_conhecidos.append(resultado[0])
 
         self.service = Service(ChromeDriverManager().install())  
 
@@ -258,13 +310,10 @@ class Aplicativo:
         #options.add_argument("--headless")
 
         self.driver = uc.Chrome(options=options)
-
-        model_path = os.path.join(self.base_path, 'Treinar IA', 'NovaIA')
+     
+        model_path = os.path.join(self.base_path, 'Treinar IA', f'IA {empresa.capitalize()}','model-best')
 
         self.IA = spacy.load(model_path)
-
-
-        self.produtos_reclamados = []
 
         self.dicionarioEmpresas = {
             "positivo" : "positivo-informatica",
@@ -308,14 +357,15 @@ class Aplicativo:
 
                         for ent in doc.ents:
                             if ent.label_ == "MOTIVO":
-                                motivo_identificado = ent.text
+                                motivo_identificado = ent.text.capitalize()
                                 break
                         
                         if produto_identificado:
                             produto_normalizado = self.normalizar_produto(produto_identificado)
-                            self.produtos_reclamados.append(produto_normalizado)
+                        elif empresa == "habibs":
+                            produto_normalizado = "Geral"
                         
-                        comando = f'INSERT INTO positivo (titulo_reclamacao, reclamacao, local_reclamacao, data_reclamacao, status_reclamacao, produto_reclamado, motivo_reclamado) VALUES ("{titulo}", "{reclamacao_texto}", "{local_reclamacao}", "{data_reclamacao}", "{status_reclamacao}", "{produto_normalizado}", "{motivo_identificado}")'
+                        comando = f'INSERT INTO {empresa} (titulo_reclamacao, reclamacao, local_reclamacao, data_reclamacao, status_reclamacao, produto_reclamado, motivo_reclamado) VALUES ("{titulo}", "{reclamacao_texto}", "{local_reclamacao}", "{data_reclamacao}", "{status_reclamacao}", "{produto_normalizado}", "{motivo_identificado}")'
                         self.cursor.execute(comando)
                         self.conexao.commit()
                         
@@ -332,20 +382,6 @@ class Aplicativo:
                 print("Erro ao acessar a página:", e)
                 print(traceback.format_exc())
                 self.driver.get(url)
-
-        self.contador_produtos1 = Counter(self.produtos_reclamados)
-        self.ranking_produtos1 = self.contador_produtos1.most_common()
-
-        for produto, frequencia in self.ranking_produtos1:
-            print(f"{produto}: {frequencia} reclamações")
-            comando = f'''
-                INSERT INTO positivo_rank (produto_rank, quantidade_rank) 
-                VALUES ("{produto}", "{frequencia}") 
-                ON DUPLICATE KEY UPDATE 
-                quantidade_rank = quantidade_rank + {frequencia};
-            '''
-            self.cursor.execute(comando)
-            self.conexao.commit()
 
         self.driver.quit()
         self.destruirFrames()
