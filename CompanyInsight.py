@@ -110,7 +110,7 @@ class Aplicativo:
         self.FrameEmpresa.pack(fill='both', expand=True)
         self.Frames.append(self.FrameEmpresa)
 
-        # Pegando os dados de rankeamento para ser exibido no grafico
+        # Pega os dados da empresa alvo
         self.cursor.execute(f"SELECT * FROM {empresa}")
         self.resultadosBancoDeDado = self.cursor.fetchall()
 
@@ -120,7 +120,6 @@ class Aplicativo:
 
         for resultado in self.resultadosBancoDeDado:
             produto = resultado[6]
-            regiao = resultado[3]
 
             if produto not in produtos_processados:
                 produtos_processados.add(produto)
