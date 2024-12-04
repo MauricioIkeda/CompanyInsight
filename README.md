@@ -6,6 +6,7 @@ Este projeto é uma ferramenta de web scraping e análise de reclamações do si
 
 - **Web Scraping**: Extrai dados de reclamações de empresas selecionadas no Reclame Aqui, incluindo:
   - Título da reclamação
+  - A reclamação em sí
   - Local da reclamação
   - Status de resposta (respondida ou não)
   - Status de resolução (resolvida ou não)
@@ -43,9 +44,9 @@ Este projeto é uma ferramenta de web scraping e análise de reclamações do si
 ## Uso
 
 1. **Configuração de Empresas**: Escolha as empresas para coleta de dados no arquivo de configuração.
-2. **Execução do Scraper**: Inicie o programa para coletar dados de reclamações:
+2. **Execução do Scraper**: Inicie o programa para coletar dados de reclamações e para IA analisar os dados e exibi-los nos graficos do frontend:
    ```bash
-   python BackEnd.ipynb
+   python CompanyInsight.ipynb
    ```
 3. **Análise de Reclamações**: As reclamações coletadas são analisadas pelo modelo de NLP para classificação e armazenamento no banco de dados.
 
@@ -53,7 +54,7 @@ Este projeto é uma ferramenta de web scraping e análise de reclamações do si
 
 - `CompanyInsight.py`: Contém toda a programação do projeto Company Insight, desde o front end até o backend já integrados.
 - `requirements.txt`: Arquivo de dependências para instalação do ambiente.
-- `Treinar-IA/`: Contém os scripts para scraping de dados no Reclame Aqui para treinamento do modelo de IA (WebScrapingColetaTreinamento.py) e contém scripts para treinar o modelo da IA para análise de texto (TreinamentoDoModelo.ipynb).
+- `Treinar-IA/`: Contém os scripts para scraping de dados no Reclame Aqui para treinamento do modelo de IA (WebScrapingColetaTreinamento.py) e contém scripts para treinar o modelo da IA para análise de texto (TreinamentoDoModelo.ipynb), separados para cada empresa que nosso programa da suporte.
 - `Interface/`: Contém a prototipação feita no Photoshop da interface e os design de imagens utilizadas no projeto como botões.
 
 ## Licença

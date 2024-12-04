@@ -152,7 +152,7 @@ class Aplicativo:
 
         canvas_widget = canvas.get_tk_widget()
 
-        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=400, height=265)
+        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=500, height=275)
 
         # Montando a tela
         self.NomeEmpresa = Label(self.FrameEmpresa, text=empresa.upper(), font="Impact 50", background=self.FrameEmpresa.cget("bg"))
@@ -268,6 +268,18 @@ class Aplicativo:
 
         self.TextoInformativo = Label(self.FrameScrapping, text="Digite a quantidade de paginas que deseja!", font="Impact 45", background=self.FrameScrapping.cget("bg"))
         self.TextoInformativo.place(relx=0.5, rely=0.4, anchor="center")
+        
+        # Montando a tela
+        self.NomeEmpresa = Label(self.FrameScrapping, text=empresa.upper(), font="Impact 50", background=self.FrameScrapping.cget("bg"))
+        self.NomeEmpresa.place(relx=0.99, rely=0.0, anchor="ne")
+
+        # Barrinhas para deixar a interface separadinha
+        self.barrinhaBonita = Frame(self.FrameScrapping, background="black", width=1280, height=3)
+        self.barrinhaBonita.place(relx=0.5, rely=0.11, anchor="center")
+
+        # Botão para voltar para tela inicial
+        self.BotaoVoltar = Button(self.FrameScrapping, text="Voltar", foreground="white", background="gray", font="Impact 20", command= lambda: (self.destruirFrames(), self.criarTelaEmpresa(empresa)))
+        self.BotaoVoltar.place(relx=0.04, rely=0.055, anchor="center")
 
         self.QuantidadePaginas = Entry(self.FrameScrapping, width=25, font="10", background="#d5d7db", justify="center")
         self.QuantidadePaginas.place(relx=0.5, rely=0.5, anchor="center")
