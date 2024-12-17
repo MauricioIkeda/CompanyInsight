@@ -23,10 +23,6 @@ import traceback
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.dates import DateFormatter
-
-from datetime import datetime
-import re
 
 import sys
 import os
@@ -109,28 +105,10 @@ class Aplicativo:
         self.HabibsBotao.place(relx=0.6, rely=0.65, anchor="center")
 
     def criarTelaEmpresa(self, empresa):
-        # Criar um container para o Canvas e Scrollbar
-        self.FrameEmpresaContainer = Frame(self.CanvasPrincipal, background="white")
-        self.FrameEmpresaContainer.pack(fill='both', expand=True)
-        self.Frames.append(self.FrameEmpresaContainer)
-
-        # Canvas para conteúdo scrollável
-        self.FrameEmpresaCanvas = Canvas(self.FrameEmpresaContainer, background="white")
-        self.FrameEmpresaCanvas.pack(side=LEFT, fill='both', expand=True)
-
-        # Scrollbar vinculada ao Canvas
-        self.scrollbar = Scrollbar(self.FrameEmpresaContainer, orient=VERTICAL, command=self.FrameEmpresaCanvas.yview)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
-
-        # Configurar o Canvas para usar a Scrollbar
-        self.FrameEmpresaCanvas.configure(yscrollcommand=self.scrollbar.set)
-
-        # Criar um Frame interno para o Canvas
-        self.FrameEmpresa = Frame(self.FrameEmpresaCanvas, background="white")
-        self.FrameEmpresaCanvas.create_window((0, 0), window=self.FrameEmpresa, anchor="nw", width=1280, height=1440)
-
-        # Atualizar o scrollregion sempre que o Frame interno for redimensionado
-        self.FrameEmpresa.bind("<Configure>", lambda e: self.FrameEmpresaCanvas.configure(scrollregion=self.FrameEmpresaCanvas.bbox("all")))
+        # Frames da Tela de Empresa
+        self.FrameEmpresa = Frame(self.CanvasPrincipal, background="white")
+        self.FrameEmpresa.pack(fill='both', expand=True)
+        self.Frames.append(self.FrameEmpresa)
 
         # Pega os dados da empresa alvo
         self.cursor.execute(f"SELECT * FROM {empresa}")
@@ -148,9 +126,10 @@ class Aplicativo:
                 self.listinhaProduto.append(produto)
 
                 for resultado2 in self.resultadosBancoDeDado:
-                    if resultado2[6] == produto and resultado[6] != "Nao identificado":
+                    produto2 = resultado2[6]
+                    if produto2 == produto:
                         self.listinhaRankProduto.append(produto)
-
+                        
         self.ranking_produtos = Counter(self.listinhaRankProduto).most_common()
 
         ranking_text = ""
@@ -160,65 +139,63 @@ class Aplicativo:
         produtos = [produto for produto, quantidade in self.ranking_produtos[:5]]
         quantidades = [quantidade for produto, quantidade in self.ranking_produtos[:5]]
 
-        # Montando o gráfico de pizza
+        # Montando o grafico de pizza
         fig, ax = plt.subplots(figsize=(4, 4))
         ax.pie(quantidades, labels=produtos, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 8})
 
         ax.axis('equal')
 
-        # plt.tight_layout()
+        #plt.tight_layout()
 
         canvas = FigureCanvasTkAgg(fig, master=self.FrameEmpresa)
         canvas.draw()
 
         canvas_widget = canvas.get_tk_widget()
 
-        canvas_widget.place(relx=0.25, rely=0.2, anchor="n", width=500, height=275)
+        canvas_widget.place(relx=0.25, rely=0.65, anchor="center", width=500, height=275)
 
         # Montando a tela
         self.NomeEmpresa = Label(self.FrameEmpresa, text=empresa.upper(), font="Impact 50", background=self.FrameEmpresa.cget("bg"))
-        self.NomeEmpresa.place(relx=0.985, rely=0.0, anchor="ne")
+        self.NomeEmpresa.place(relx=0.99, rely=0.0, anchor="ne")
 
         # Botão para Scrapping
         self.BotaoScrap = Button(self.FrameEmpresa, text="Fazer Scrapping", foreground="white", background="gray", font="Impact 20", command= lambda: (self.destruirFrames(), self.criarTelaScrapping(empresa)))
-        self.BotaoScrap.place(relx=0.5, rely=0.03, anchor="center")
+        self.BotaoScrap.place(relx=0.5, rely=0.055, anchor="center")
 
         # Botão para voltar para tela inicial
         self.BotaoVoltar = Button(self.FrameEmpresa, text="Voltar", foreground="white", background="gray", font="Impact 20", command= lambda: (self.destruirFrames(), self.criarTelaInicial()))
-        self.BotaoVoltar.place(relx=0.04, rely=0.03, anchor="center")
+        self.BotaoVoltar.place(relx=0.04, rely=0.055, anchor="center")
 
         # Barrinhas para deixar a interface separadinha
         self.barrinhaBonita = Frame(self.FrameEmpresa, background="black", width=1280, height=3)
-        self.barrinhaBonita.place(relx=0.5, rely=0.06, anchor="center")
+        self.barrinhaBonita.place(relx=0.5, rely=0.11, anchor="center")
 
-        self.barrinhaBonita2 = Frame(self.FrameEmpresa, background="black", width=3, height=1354)
+        self.barrinhaBonita2 = Frame(self.FrameEmpresa, background="black", width=3, height=640)
         self.barrinhaBonita2.place(relx=0.5, rely=1, anchor="s")
 
         # Ranqueamento de produtos
-        self.LabelzinhoRankProduto = Label(self.FrameEmpresa, text="Rank Dos Mais Reclamados", font="Impact 20", background=self.FrameEmpresa.cget("bg"))
-        self.LabelzinhoRankProduto.place(relx=0.05, rely=0.1, anchor="w")
+        self.LabelzinhoRankProduto = Label(self.FrameEmpresa, text="Rank Dos Mais Reclamados", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
+        self.LabelzinhoRankProduto.place(relx=0.05, rely=0.2, anchor="w")
 
         self.Rank = Label(self.FrameEmpresa, text=ranking_text, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
-        self.Rank.place(relx=0.05, rely=0.11, anchor="nw")
+        self.Rank.place(relx=0.05, rely=0.23, anchor="nw")
 
         # Barra de seleção do produto para exibir na tabela
         self.SeletorReclamacoes = ttk.Combobox(self.FrameEmpresa, values=self.listinhaProduto)
         self.SeletorReclamacoes.set(self.listinhaProduto[0])
-        self.SeletorReclamacoes.bind("<<ComboboxSelected>>", lambda event: (self.mudarTabela(self.SeletorReclamacoes.get()), self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get()), self.montarGraficoReclamacoesData(self.SeletorReclamacoes.get())))
-        self.SeletorReclamacoes.place(relx=0.75, rely=0.1, anchor="center")
+        self.SeletorReclamacoes.bind("<<ComboboxSelected>>", lambda event: (self.mudarTabela(self.SeletorReclamacoes.get()), self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get())))
+        self.SeletorReclamacoes.place(relx=0.75, rely=0.17, anchor="center")
 
         # Criando e colocando os dados da tabela de reclamações
         self.tree = ttk.Treeview(self.FrameEmpresa, columns=("Reclamações"), show='headings')
         self.tree.column("Reclamações", width=500)
         self.tree.heading("Reclamações", text="Reclamações".capitalize())
-        self.tree.place(relx=0.75, rely=0.13, anchor="n")
+        self.tree.place(relx=0.75, rely=0.4, anchor="center")
 
         self.cursor.execute(f"SELECT motivo_reclamado FROM {empresa}")
         self.resultadosMotivoReclamacao = self.cursor.fetchall()
         self.cursor.execute(f"SELECT produto_reclamado FROM {empresa}")
         self.resultadosProdutoReclamado = self.cursor.fetchall()
-        self.cursor.execute(f"SELECT data_reclamacao FROM {empresa}")
-        self.resultadosDataReclamacao = self.cursor.fetchall()
 
         estilo = ttk.Style()
         estilo.configure("Treeview", rowheight=25)
@@ -226,45 +203,13 @@ class Aplicativo:
         self.mudarTabela(self.SeletorReclamacoes.get())
 
         # Ranqueamento de localidade reclamada
-        self.LabelzinhoRankRegiao = Label(self.FrameEmpresa, text=f"Rank Das Regiões Mais Reclamadas De {(self.SeletorReclamacoes.get()).capitalize()}", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
-        self.LabelzinhoRankRegiao.place(relx=0.55, rely=0.33, anchor="nw")
+        self.LabelzinhoRankRegiao = Label(self.FrameEmpresa, text="Rank Das Regiões Mais Reclamadas", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
+        self.LabelzinhoRankRegiao.place(relx=0.55, rely=0.65, anchor="w")
 
         self.RankRegiao = Label(self.FrameEmpresa, text="", font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
-        self.RankRegiao.place(relx=0.55, rely=0.35, anchor="nw")
+        self.RankRegiao.place(relx=0.55, rely=0.68, anchor="nw")
 
         self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get())
-        self.montarGraficoReclamacoesData(self.SeletorReclamacoes.get())
-
-    def montarGraficoReclamacoesData(self, produto):
-        # Criando Grafico Das Datas Reclamações
-        GraficoReclamacoesData = plt.figure(figsize=(6, 3), dpi=100)
-        CanvasGraficoReclamacoesData = FigureCanvasTkAgg(GraficoReclamacoesData, master=self.FrameEmpresa)
-        CanvasGraficoReclamacoesData.draw()
-        CanvasGraficoReclamacoesData.get_tk_widget().place(relx=0.75, rely=0.45, anchor="n")
-        
-        self.DataReclamada = []  # Lista para armazenar as datas
-        for data, produto_reclamado in zip(self.resultadosDataReclamacao, self.resultadosProdutoReclamado):
-            if produto_reclamado[0] == produto:
-                self.DataReclamada.append(data[0])
-                print(data[0])
-        
-        # Contando a quantidade de reclamações para cada data
-        data_contagem = Counter(self.DataReclamada)
-        
-        # Colocando as datas em ordem
-        datas_ordenadas = sorted(data_contagem.keys())
-        
-        # Criando listas para as datas e quantidades de reclamações
-        quantidades = [data_contagem[date] for date in datas_ordenadas]
-        
-        # Configurando o grafico
-        plt.plot(datas_ordenadas, quantidades, 'o-r')
-        plt.xlabel('Data')
-        plt.ylabel('Quantidade')
-        plt.xticks(datas_ordenadas, [str(date) for date in datas_ordenadas], rotation=45)
-        plt.yticks(range(max(quantidades) + 1))
-        plt.grid(True)
-        plt.tight_layout(pad=2.0)
     
     def formatar_texto(self, texto, largura_maxima):
         palavras = texto.split()
@@ -282,6 +227,7 @@ class Aplicativo:
             linhas.append(linha_atual)
 
         return "\n".join(linhas)
+
 
     def mudarTabela(self, produto):
         largura_maxima = 90
@@ -303,8 +249,6 @@ class Aplicativo:
 
     def mudarRanqueamentoRegiao(self, produto):
         self.listinhaRankRegiao = []
-
-        self.LabelzinhoRankRegiao.config(text=f"Rank Das Regiões Mais Reclamadas De {str(produto).capitalize()}")
 
         for resultado in self.resultadosBancoDeDado:
             if produto == resultado[6]:
@@ -353,14 +297,14 @@ class Aplicativo:
         if lematizado.endswith('s'):
             lematizado = lematizado.rstrip('s')
         
-        resultado = process.extractOne(lematizado, self.produtos_conhecidos, score_cutoff=90)
+        resultado = process.extractOne(lematizado, self.produtos_conhecidos, score_cutoff=75)
         
         if resultado:
             produto_correspondente, similaridade = resultado
             return produto_correspondente
         else:
             self.produtos_conhecidos.append(lematizado)
-
+        
         return lematizado
     
     def fazerScrapping(self, empresa):
@@ -410,10 +354,8 @@ class Aplicativo:
                         titulo = self.driver.find_element(By.CLASS_NAME, 'sc-lzlu7c-3').text
                         reclamacao_texto = self.driver.find_element(By.CLASS_NAME, 'sc-lzlu7c-17').text.replace('\n', ' ').replace('"', ' ').replace("'", ' ')
                         local_reclamacao = self.driver.find_elements(By.CLASS_NAME, 'sc-lzlu7c-6')[0].text
-                        data_reclamacao_cru = self.driver.find_elements(By.CLASS_NAME, 'sc-lzlu7c-6')[1].text
+                        data_reclamacao = self.driver.find_elements(By.CLASS_NAME, 'sc-lzlu7c-6')[1].text
                         status_reclamacao = self.driver.find_element(By.CLASS_NAME, 'sc-lzlu7c-18').text
-
-                        data_reclamacao = re.match(r'(\d{2}/\d{2}/\d{4})', data_reclamacao_cru)
 
                         produto_identificado = None
                         motivo_identificado = None
@@ -433,10 +375,8 @@ class Aplicativo:
                             produto_normalizado = self.normalizar_produto(produto_identificado)
                         elif empresa == "habibs":
                             produto_normalizado = "Geral"
-                        else:
-                            produto_normalizado = "Nao identificado"
                         
-                        comando = f'INSERT INTO {empresa} (titulo_reclamacao, reclamacao, local_reclamacao, data_reclamacao, status_reclamacao, produto_reclamado, motivo_reclamado) VALUES ("{titulo}", "{reclamacao_texto}", "{local_reclamacao}", "{data_reclamacao.group(1)}", "{status_reclamacao}", "{produto_normalizado}", "{motivo_identificado}")'
+                        comando = f'INSERT INTO {empresa} (titulo_reclamacao, reclamacao, local_reclamacao, data_reclamacao, status_reclamacao, produto_reclamado, motivo_reclamado) VALUES ("{titulo}", "{reclamacao_texto}", "{local_reclamacao}", "{data_reclamacao}", "{status_reclamacao}", "{produto_normalizado}", "{motivo_identificado}")'
                         self.cursor.execute(comando)
                         self.conexao.commit()
                         
