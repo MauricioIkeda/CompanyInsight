@@ -23,9 +23,7 @@ import traceback
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.dates import DateFormatter
 
-from datetime import datetime
 import re
 
 import sys
@@ -241,7 +239,6 @@ class Aplicativo:
         listaDeStatus = []
         for status in self.resultadosStatusReclamacao:
             listaDeStatus.append(status[0])
-            print(status[0])
 
         self.rankingStatusGeralText = ""
         for produto, quantidade in Counter(listaDeStatus).most_common():
@@ -250,7 +247,6 @@ class Aplicativo:
         self.tituloRankStatusGeral = Label(self.FrameEmpresa, text=f"Status Das Reclamações Geral", font="Impact 20", background=self.FrameEmpresa.cget("bg"))
         self.tituloRankStatusGeral.place(relx=0.05, rely=0.4, anchor="nw")
 
-        print(self.rankingStatusGeralText)
         self.rankStatusGeral = Label(self.FrameEmpresa, text=self.rankingStatusGeralText, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
         self.rankStatusGeral.place(relx=0.05, rely=0.425, anchor="nw")
 
