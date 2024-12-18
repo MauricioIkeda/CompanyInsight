@@ -109,6 +109,16 @@ class Aplicativo:
         self.HabibsBotao.place(relx=0.6, rely=0.65, anchor="center")
 
     def criarTelaEmpresa(self, empresa):
+        # Obtendo todos os dados do banco de dado da empresa especifica
+        self.cursor.execute(f"SELECT motivo_reclamado FROM {empresa}")
+        self.resultadosMotivoReclamacao = self.cursor.fetchall()
+        self.cursor.execute(f"SELECT produto_reclamado FROM {empresa}")
+        self.resultadosProdutoReclamado = self.cursor.fetchall()
+        self.cursor.execute(f"SELECT data_reclamacao FROM {empresa}")
+        self.resultadosDataReclamacao = self.cursor.fetchall()
+        self.cursor.execute(f"SELECT status_reclamacao FROM {empresa}")
+        self.resultadosStatusReclamacao = self.cursor.fetchall()
+
         # Criar um container para o Canvas e Scrollbar
         self.FrameEmpresaContainer = Frame(self.CanvasPrincipal, background="white")
         self.FrameEmpresaContainer.pack(fill='both', expand=True)
@@ -194,17 +204,10 @@ class Aplicativo:
         self.barrinhaBonita2 = Frame(self.FrameEmpresa, background="black", width=3, height=1354)
         self.barrinhaBonita2.place(relx=0.5, rely=1, anchor="s")
 
-        # Ranqueamento de produtos
-        self.LabelzinhoRankProduto = Label(self.FrameEmpresa, text="Rank Dos Mais Reclamados", font="Impact 20", background=self.FrameEmpresa.cget("bg"))
-        self.LabelzinhoRankProduto.place(relx=0.05, rely=0.1, anchor="w")
-
-        self.Rank = Label(self.FrameEmpresa, text=ranking_text, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
-        self.Rank.place(relx=0.05, rely=0.11, anchor="nw")
-
         # Barra de seleção do produto para exibir na tabela
         self.SeletorReclamacoes = ttk.Combobox(self.FrameEmpresa, values=self.listinhaProduto)
         self.SeletorReclamacoes.set(self.listinhaProduto[0])
-        self.SeletorReclamacoes.bind("<<ComboboxSelected>>", lambda event: (self.mudarTabela(self.SeletorReclamacoes.get()), self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get()), self.montarGraficoReclamacoesData(self.SeletorReclamacoes.get())))
+        self.SeletorReclamacoes.bind("<<ComboboxSelected>>", lambda event: (self.mudarTabela(self.SeletorReclamacoes.get()), self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get()), self.montarGraficoReclamacoesData(self.SeletorReclamacoes.get()), self.mudarRanqueamentoStatus(self.SeletorReclamacoes.get())))
         self.SeletorReclamacoes.place(relx=0.75, rely=0.1, anchor="center")
 
         # Criando e colocando os dados da tabela de reclamações
@@ -213,40 +216,90 @@ class Aplicativo:
         self.tree.heading("Reclamações", text="Reclamações".capitalize())
         self.tree.place(relx=0.75, rely=0.13, anchor="n")
 
-        self.cursor.execute(f"SELECT motivo_reclamado FROM {empresa}")
-        self.resultadosMotivoReclamacao = self.cursor.fetchall()
-        self.cursor.execute(f"SELECT produto_reclamado FROM {empresa}")
-        self.resultadosProdutoReclamado = self.cursor.fetchall()
-        self.cursor.execute(f"SELECT data_reclamacao FROM {empresa}")
-        self.resultadosDataReclamacao = self.cursor.fetchall()
-
         estilo = ttk.Style()
         estilo.configure("Treeview", rowheight=25)
 
         self.mudarTabela(self.SeletorReclamacoes.get())
 
+        # RANQUEAMENTOS
+
+        # Ranqueamento de produtos
+        self.tituloRankProduto = Label(self.FrameEmpresa, text="Rank Dos Mais Reclamados", font="Impact 20", background=self.FrameEmpresa.cget("bg"))
+        self.tituloRankProduto.place(relx=0.05, rely=0.1, anchor="w")
+
+        self.rank = Label(self.FrameEmpresa, text=ranking_text, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
+        self.rank.place(relx=0.05, rely=0.11, anchor="nw")
+
         # Ranqueamento de localidade reclamada
-        self.LabelzinhoRankRegiao = Label(self.FrameEmpresa, text=f"Rank Das Regiões Mais Reclamadas De {(self.SeletorReclamacoes.get()).capitalize()}", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
-        self.LabelzinhoRankRegiao.place(relx=0.55, rely=0.33, anchor="nw")
+        self.tituloRankRegiao = Label(self.FrameEmpresa, text=f"Rank Das Regiões Mais Reclamadas De {(self.SeletorReclamacoes.get()).capitalize()}", font="Impact 18", background=self.FrameEmpresa.cget("bg"))
+        self.tituloRankRegiao.place(relx=0.55, rely=0.33, anchor="nw")
 
-        self.RankRegiao = Label(self.FrameEmpresa, text="", font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
-        self.RankRegiao.place(relx=0.55, rely=0.35, anchor="nw")
+        self.rankRegiao = Label(self.FrameEmpresa, text="", font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
+        self.rankRegiao.place(relx=0.55, rely=0.35, anchor="nw")
 
-        self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get())
+        # Ranqueamento Geral dos status das reclamações
+        listaDeStatus = []
+        for status in self.resultadosStatusReclamacao:
+            listaDeStatus.append(status[0])
+            print(status[0])
+
+        self.rankingStatusGeralText = ""
+        for produto, quantidade in Counter(listaDeStatus).most_common():
+            self.rankingStatusGeralText += f"{quantidade} - {produto}.\n"
+
+        self.tituloRankStatusGeral = Label(self.FrameEmpresa, text=f"Status Das Reclamações Geral", font="Impact 20", background=self.FrameEmpresa.cget("bg"))
+        self.tituloRankStatusGeral.place(relx=0.05, rely=0.4, anchor="nw")
+
+        print(self.rankingStatusGeralText)
+        self.rankStatusGeral = Label(self.FrameEmpresa, text=self.rankingStatusGeralText, font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
+        self.rankStatusGeral.place(relx=0.05, rely=0.425, anchor="nw")
+
+        # Grafico das datas das reclamações do produto
+        self.tituloGraficoDataReclamacoes = Label(self.FrameEmpresa, text=f"Gráfico Das Datas Das Reclamações de {(self.SeletorReclamacoes.get()).capitalize()}", font="Impact 20", background=self.FrameEmpresa.cget("bg"), justify='left')
+        self.tituloGraficoDataReclamacoes.place(relx=0.55, rely=0.47, anchor="nw")
+
         self.montarGraficoReclamacoesData(self.SeletorReclamacoes.get())
 
+        # Ranqueamento dos Status das reclamações do Produto selecionado
+        self.tituloRankStatusProduto = Label(self.FrameEmpresa, text=f"Status Das Reclamações de {(self.SeletorReclamacoes.get()).capitalize()}", font="Impact 20", background=self.FrameEmpresa.cget("bg"), justify='left')
+        self.tituloRankStatusProduto.place(relx=0.55, rely=0.72, anchor="nw")
+
+        self.rankStatusProduto = Label(self.FrameEmpresa, text="", font="Impact 18", background=self.FrameEmpresa.cget("bg"), justify='left')
+        self.rankStatusProduto.place(relx=0.55, rely=0.745, anchor="nw")
+
+        # Chamada das funções iniciais
+        self.mudarRanqueamentoRegiao(self.SeletorReclamacoes.get())
+        self.mudarRanqueamentoStatus(self.SeletorReclamacoes.get())
+
+    def mudarRanqueamentoStatus(self, produto):
+        self.tituloRankStatusProduto.lift()
+        self.tituloRankStatusProduto.config(text=f"Status Das Reclamações de {(self.SeletorReclamacoes.get()).capitalize()}")
+        listaDeStatus = []
+
+        for status_reclacamao, produto_reclamado in zip(self.resultadosStatusReclamacao, self.resultadosProdutoReclamado):
+            if produto == produto_reclamado[0]:
+                listaDeStatus.append(status_reclacamao[0])
+
+        self.rankingStatusProdutoText = ""
+        for status, quantidade in Counter(listaDeStatus).most_common():
+            self.rankingStatusProdutoText += f"{quantidade} - {status}.\n"
+
+        self.rankStatusProduto.config(text=self.rankingStatusProdutoText)
+
     def montarGraficoReclamacoesData(self, produto):
+        if hasattr(self, 'CanvasGraficoReclamacoesData'):
+            CanvasGraficoReclamacoesData.place_forget()
+
         # Criando Grafico Das Datas Reclamações
         GraficoReclamacoesData = plt.figure(figsize=(6, 3), dpi=100)
         CanvasGraficoReclamacoesData = FigureCanvasTkAgg(GraficoReclamacoesData, master=self.FrameEmpresa)
         CanvasGraficoReclamacoesData.draw()
-        CanvasGraficoReclamacoesData.get_tk_widget().place(relx=0.75, rely=0.45, anchor="n")
+        CanvasGraficoReclamacoesData.get_tk_widget().place(relx=0.75, rely=0.52, anchor="n")
         
         self.DataReclamada = []  # Lista para armazenar as datas
         for data, produto_reclamado in zip(self.resultadosDataReclamacao, self.resultadosProdutoReclamado):
             if produto_reclamado[0] == produto:
                 self.DataReclamada.append(data[0])
-                print(data[0])
         
         # Contando a quantidade de reclamações para cada data
         data_contagem = Counter(self.DataReclamada)
@@ -265,6 +318,8 @@ class Aplicativo:
         plt.yticks(range(max(quantidades) + 1))
         plt.grid(True)
         plt.tight_layout(pad=2.0)
+
+        self.tituloGraficoDataReclamacoes.config(text=f"Gráfico Das Datas Das Reclamações\nde {(self.SeletorReclamacoes.get()).capitalize()}")
     
     def formatar_texto(self, texto, largura_maxima):
         palavras = texto.split()
@@ -304,7 +359,7 @@ class Aplicativo:
     def mudarRanqueamentoRegiao(self, produto):
         self.listinhaRankRegiao = []
 
-        self.LabelzinhoRankRegiao.config(text=f"Rank Das Regiões Mais Reclamadas De {str(produto).capitalize()}")
+        self.tituloRankRegiao.config(text=f"Rank Das Regiões Mais Reclamadas De {str(produto).capitalize()}")
 
         for resultado in self.resultadosBancoDeDado:
             if produto == resultado[6]:
@@ -312,10 +367,10 @@ class Aplicativo:
         
         self.rankingRegiao_text = ""
         for index, (produto, quantidade) in enumerate(Counter(self.listinhaRankRegiao).most_common()[0:5], start=1):
-            self.rankingRegiao_text += f"{index}. {produto}\n"
+            self.rankingRegiao_text += f"{quantidade} Reclamações - {produto}\n"
             self.listinhaProduto.append(produto)
         
-        self.RankRegiao.config(text=self.rankingRegiao_text)
+        self.rankRegiao.config(text=self.rankingRegiao_text)
 
     def criarTelaScrapping(self, empresa):
         self.FrameScrapping = Frame(self.CanvasPrincipal, background="white")
